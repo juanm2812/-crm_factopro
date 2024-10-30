@@ -26,6 +26,30 @@
         </div>
     </div>
 </div>
+<div class="form-group">
+    <div class="row">
+        <label for="" class="<?php echo $label_column; ?> dniruc_section">RUC</label>
+        <div class="<?php echo $field_column; ?>">
+            <div class="input-group">
+                <?php
+                echo form_input(array(
+                    "id" => "rucDNI",
+                    "name" => "rucDNI",
+                    "value" => $model_info->company_code,
+                    "class" => "form-control dniruc_input_section",
+                    "placeholder" => 'RUC',
+                    "autofocus" => true,
+                    "data-rule-required" => true,
+                    "data-msg-required" => app_lang("field_required"),
+                ));
+                ?>
+                    <button class="btn btn-outline-secondary" type="button" id="searchButton">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <?php if ($model_info->id) { ?>
     <div class="form-group">
@@ -363,16 +387,84 @@
                 data: <?php echo json_encode($label_suggestions); ?>
             });
         <?php } ?>
+        let typeSelector = 1;
+        
         $('.account_type').click(function() {
+            $("#rucDNI").val('')
+            $("#company_name").val('')
+            $("#address").val('')
+            $("#city").val('')
+
             var inputValue = $(this).attr("value");
             if (inputValue === "person") {
+                typeSelector = 2
                 $(".company_name_section").html("<?php echo app_lang('name'); ?>");
                 $(".company_name_input_section").attr("placeholder", "<?php echo app_lang('name'); ?>");
+
+                $(".dniruc_section").html("DNI");
+                $(".dniruc_input_section").attr("placeholder", "DNI");
+
+
             } else {
+                typeSelector = 1
                 $(".company_name_section").html("<?php echo app_lang('company_name'); ?>");
                 $(".company_name_input_section").attr("placeholder", "<?php echo app_lang('company_name'); ?>");
+
+                $(".dniruc_section").html("RUC");
+                $(".dniruc_input_section").attr("placeholder", "RUC");
             }
         });
+        
+        $("#searchButton").click(function () {
+
+            const type = (typeSelector == 2) ? 'dni' : 'ruc'
+
+            if($("#rucDNI").val() == ''){
+                alert("Debe ingresar el " + type.toUpperCase())
+
+                return false;
+            }
+
+            const tamanio = ($("#rucDNI").val()).length;
+
+            if(type == 'dni' && tamanio != 8){
+                alert("El DNI debe contar con 8 dígitos.")
+                return false;
+            }
+
+            if(type == 'ruc' && tamanio != 11){
+                alert("El RUC debe contar con 11 dígitos.")
+                return false;
+            }
+
+            var settings = {
+                "url": "https://apiperu.dev/api/" + type,
+                "method": "POST",
+                "timeout": 0,
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer 5b2e3b657920d5d697d9c085a25e15dbdf3676a123c2f0bc596d612b8833619c"
+                },
+                "data": JSON.stringify({
+                    [type]: $("#rucDNI").val()
+                }),
+            };
+
+            $.ajax(settings).done(function (response) {
+                // console.log(response);
+                if(response.success){
+                    const data = response.data
+                    $("#company_name").val(data.nombre_o_razon_social)
+                    $("#address").val(data.direccion_completa)
+                    $("#city").val(data.distrito ?? '')
+
+                }else{
+                    alert(response.message)
+                }
+            });
+
+            
+        })
 
     });
 </script>

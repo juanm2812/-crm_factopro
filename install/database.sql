@@ -119,6 +119,7 @@ CREATE TABLE IF NOT EXISTS `client_groups` (
 
 CREATE TABLE IF NOT EXISTS `clients` (
   `id` int NOT NULL AUTO_INCREMENT,
+  `company_code` varchar(15) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `company_name` varchar(150) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `type` enum('organization','person') CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL DEFAULT 'organization',
   `address` text CHARACTER SET utf8 COLLATE utf8_unicode_ci,
@@ -618,6 +619,17 @@ CREATE TABLE IF NOT EXISTS `invoices` (
   `display_id` text COLLATE utf8_unicode_ci NOT NULL,
   `number_year` int DEFAULT NULL,
   `number_sequence` int DEFAULT NULL,
+  `respuesta_envio` text COLLATE utf8mb3_unicode_ci,
+  `codigo_envio` varchar(10) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `external_id` text COLLATE utf8mb3_unicode_ci,
+  `url_cdr` text COLLATE utf8mb3_unicode_ci,
+  `url_xml` text COLLATE utf8mb3_unicode_ci,
+  `url_pdf` text COLLATE utf8mb3_unicode_ci,
+  `anulado` char(1) COLLATE utf8mb3_unicode_ci DEFAULT '0',
+  `token_anulacion` text COLLATE utf8mb3_unicode_ci,
+  `motivo_anulacion` text COLLATE utf8mb3_unicode_ci,
+  `fecha_anulacion` datetime DEFAULT NULL,
+  `respuesta_anulacion` text COLLATE utf8mb3_unicode_ci,
   PRIMARY KEY (`id`),
   KEY `status` (`status`),
   KEY `due_date` (`due_date`),
@@ -1693,11 +1705,14 @@ INSERT INTO `settings` (`setting_name`, `setting_value`, `type`, `deleted`) VALU
 ('module_todo', '1', 'app', 0),
 ('order_color', '#000000', 'app', 0),
 ('proposal_color', '#000000', 'app', 0),
+('serie_facturadorpro', '', 'app', 0),
 ('show_theme_color_changer', 'yes', 'app', 0),
 ('signin_page_background', 'sigin-background-image.jpg', 'app', 0),
 ('site_logo', 'default-stie-logo.png', 'app', 0),
 ('task_point_range', '5', 'app', 0),
 ('time_format', 'small', 'app', 0),
+('token_facturadorpro', '', 'app', 0),
+('url_facturadorpro', '', 'app', 0),
 ('timezone', 'UTC', 'app', 0);
 
 INSERT INTO `task_priority` (`id`, `title`, `icon`, `color`, `deleted`) VALUES

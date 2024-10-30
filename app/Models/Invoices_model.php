@@ -618,4 +618,21 @@ class Invoices_model extends Crud_model {
         return $result ? $result : 0;
     }
 
+    function get_invoice_by_id($id) {
+        $invoices_table = $this->db->prefixTable('invoices');
+        $clientes = $this->db->prefixTable('clients');
+        $taxes = $this->db->prefixTable('taxes');
+
+        $id = $this->_get_clean_value($id); // Asegúrate de limpiar el valor para evitar SQL Injection
+    
+        $sql = "SELECT i.*, c.*, t.percentage as igv FROM $invoices_table as i INNER JOIN $clientes as c ON i.client_id = c.id LEFT JOIN $taxes as t ON i.tax_id = t.id WHERE i.id = ?";
+        $query = $this->db->query($sql, [$id]);
+    
+        return $query->getRow(); // Devuelve el resultado como un objeto
+    }
+
+    function update_invoice_respuesta_pro($data, $invoice_id) {
+        return $this->ci_save($data, $invoice_id);
+    }
+
 }

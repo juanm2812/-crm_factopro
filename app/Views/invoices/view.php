@@ -39,11 +39,37 @@
                                             <li role="presentation"><?php echo modal_anchor(get_uri("invoices/send_invoice_modal_form/" . $invoice_info->id), "<i data-feather='mail' class='icon-16'></i> " . app_lang('email_credit_note_to_client'), array("title" => app_lang('email_credit_note_to_client'), "data-post-id" => $invoice_info->id, "role" => "menuitem", "tabindex" => "-1", "class" => "dropdown-item")); ?> </li>
                                         <?php } ?>
                                     <?php } ?>
-                                    <li role="presentation"><?php echo anchor(get_uri("invoices/download_pdf/" . $invoice_info->id), "<i data-feather='download' class='icon-16'></i> " . app_lang('download_pdf'), array("title" => app_lang('download_pdf'), "class" => "dropdown-item")); ?> </li>
-                                    <li role="presentation"><?php echo anchor(get_uri("invoices/download_pdf/" . $invoice_info->id . "/view"), "<i data-feather='file-text' class='icon-16'></i> " . app_lang('view_pdf'), array("title" => app_lang('view_pdf'), "target" => "_blank", "class" => "dropdown-item")); ?> </li>
-                                    <li role="presentation"><?php echo anchor(get_uri("invoices/preview/" . $invoice_info->id . "/1"), "<i data-feather='search' class='icon-16'></i> " . app_lang('preview'), array("title" => app_lang('preview'), "target" => "_blank", "class" => "dropdown-item")); ?> </li>
-                                    <li role="presentation"><?php echo js_anchor("<i data-feather='printer' class='icon-16'></i> " . app_lang('print'), array('title' => app_lang('print'), 'id' => 'print-invoice-btn', "class" => "dropdown-item")); ?> </li>
-
+                                    <?php if($invoice_info->codigo_envio == '0'){ ?>
+                                        <li role="presentation">
+                                            <a href="<?php echo $invoice_info->url_cdr; ?>" title="Descargar PDF" class="dropdown-item">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-download icon-16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> 
+                                                Descargar CDR
+                                            </a>
+                                        </li>
+                                        <li role="presentation">
+                                            <a href="<?php echo $invoice_info->url_xml; ?>" title="Descargar PDF" class="dropdown-item">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-download icon-16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> 
+                                                Descargar XML
+                                            </a>
+                                        </li>
+                                        <!-- <li role="presentation">
+                                            <a href="<?php echo $invoice_info->external_id; ?>" title="Descargar PDF" class="dropdown-item">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-download icon-16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> 
+                                                Imprimir
+                                            </a>
+                                        </li> -->
+                                        <li role="presentation">
+                                            <a href="<?php echo $invoice_info->external_id; ?>" title="Descargar PDF" class="dropdown-item">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-download icon-16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> 
+                                                Anular
+                                            </a>
+                                        </li>
+                                    <?php }else{ ?>
+                                        <li role="presentation"><?php echo anchor(get_uri("invoices/download_pdf/" . $invoice_info->id), "<i data-feather='download' class='icon-16'></i> " . app_lang('download_pdf'), array("title" => app_lang('download_pdf'), "class" => "dropdown-item")); ?> </li>
+                                        <li role="presentation"><?php echo anchor(get_uri("invoices/download_pdf/" . $invoice_info->id . "/view"), "<i data-feather='file-text' class='icon-16'></i> " . app_lang('view_pdf'), array("title" => app_lang('view_pdf'), "target" => "_blank", "class" => "dropdown-item")); ?> </li>
+                                        <li role="presentation"><?php echo anchor(get_uri("invoices/preview/" . $invoice_info->id . "/1"), "<i data-feather='search' class='icon-16'></i> " . app_lang('preview'), array("title" => app_lang('preview'), "target" => "_blank", "class" => "dropdown-item")); ?> </li>
+                                        <li role="presentation"><?php echo js_anchor("<i data-feather='printer' class='icon-16'></i> " . app_lang('print'), array('title' => app_lang('print'), 'id' => 'print-invoice-btn', "class" => "dropdown-item")); ?> </li>
+                                    <?php } ?>
                                     <?php if ($can_edit_invoices && $invoice_info->type == "invoice") { ?>
                                         <li role="presentation" class="dropdown-divider"></li>
 
@@ -76,7 +102,7 @@
                     </div>
 
                     <ul id="invoice-tabs" data-bs-toggle="ajax-tab" class="nav nav-pills rounded classic mb20 scrollable-tabs border-white" role="tablist">
-                        <li><a role="presentation" data-bs-toggle="tab"  href="<?php echo_uri("invoices/details/" . $invoice_info->id); ?>" data-bs-target="#invoice-details-section"><?php echo app_lang("details"); ?></a></li>
+                        <li><a role="presentation" <?php if($invoice_info->codigo_envio == '0'){echo "style='background:#70ed49!important'";}?> data-bs-toggle="tab"  href="<?php echo_uri("invoices/details/" . $invoice_info->id); ?>" data-bs-target="<?php if($invoice_info->codigo_envio == '0'){ echo '#invoice-details-section2'; }else{ echo '#invoice-details-section'; } ?>"><?php echo app_lang("details"); ?></a></li>
                         <?php if ($invoice_info->type == "invoice") { ?>
                             <li><a role="presentation" data-bs-toggle="tab" href="<?php echo_uri("invoices/payments/" . $invoice_info->id); ?>" data-bs-target="#invoice-payments-section"><?php echo app_lang('payments'); ?></a></li>
                             <?php if ($invoice_info->recurring) { ?>
@@ -87,7 +113,13 @@
                     </ul>
                 </div>
                 <div class="tab-content">
-                    <div role="tabpanel" class="tab-pane fade active" id="invoice-details-section"></div>
+                    <?php if($invoice_info->codigo_envio == '0'){ ?>
+                        <div role="tabpanel" class="tab-pane fade active" id="invoice-details-section2">
+                        <iframe src="<?php echo get_setting('url_facturadorpro'); ?>/print/document/<?php echo $invoice_info->external_id; ?>/a4" width="100%" height="600vh" frameborder="0"></iframe>
+                        </div>
+                    <?php }else{ ?>
+                        <div role="tabpanel" class="tab-pane fade active" id="invoice-details-section"></div>
+                    <?php } ?>
                     <?php if ($invoice_info->type == "invoice") { ?>
                         <div role="tabpanel" class="tab-pane fade grid-button" id="invoice-payments-section"></div>
                         <?php if ($invoice_info->recurring) { ?>

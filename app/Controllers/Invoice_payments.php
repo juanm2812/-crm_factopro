@@ -89,8 +89,8 @@ class Invoice_payments extends Security_Controller {
     /* add or edit a payment */
 
     function save_payment() {
-        $this->access_only_allowed_members();
 
+        $this->access_only_allowed_members();
         $this->validate_submitted_data(array(
             "id" => "numeric",
             "invoice_id" => "required|numeric",
@@ -126,6 +126,193 @@ class Invoice_payments extends Security_Controller {
             //get payment data
             $options = array("id" => $invoice_payment_id);
             $item_info = $this->Invoice_payments_model->get_details($options)->getRow();
+            $invoiceValid = $this->Invoices_model->get_invoice_by_id($invoice_id);
+
+            if(empty($invoiceValid->codigo_envio)){
+
+                $invoiceDetail = $this->Invoice_items_model->get_details(['invoice_id' => $invoice_id])->getResult();
+
+                $descuentosAjax = [];
+
+                // $total_venta = $total_venta - ;
+                if ($invoiceValid->discount_total > 0) {
+                    $factor = (($invoiceValid->discount_total * 100) / $invoiceValid->invoice_subtotal) / 100;
+                    $descuentosAjax = [
+                        "descuentos" => [
+                            [
+                                "codigo" => "03",
+                                "descripcion" => "Descuentos globales que no afectan la base imponible del IGV/IVAP",
+                                "factor" => number_format($factor, 5, '.', ''),
+                                "monto" => number_format($invoiceValid->discount_total, 2, '.', ''),
+                                "base" => number_format($invoiceValid->invoice_subtotal, 2, '.', '')
+                            ]
+                        ],
+                    ];
+                }
+                $igv = 0;
+                if($invoiceValid->tax > 0){
+                    if($invoiceValid->igv > 0){
+                        $igv = $invoiceValid->igv / 100;
+                    }else{
+                        $igv = 0; 
+                    }
+                }
+
+                $products = [];
+                foreach($invoiceDetail as $detail){
+                    $products[] = 
+                        [
+                            "codigo_interno" => 'PRO001',
+                            "descripcion" => $detail->description,
+                            "codigo_producto_sunat" => "",
+                            "unidad_de_medida" => ($detail->unit_type == 'UND') ? 'NIU' : $detail->unit_type, #dejarlo en NIU la Unidad de Medida
+                            "cantidad" => $detail->quantity,
+                            "valor_unitario" => number_format($detail->rate, 6, '.', ''), // precio /igv
+                            "codigo_tipo_precio" => "01", #Dejarlo como esta
+                            "precio_unitario" => number_format($detail->rate + + ($detail->rate * $igv), 6, '.', ''), #TOTAL DEL PRODUCTO
+                            "codigo_tipo_afectacion_igv" => ($igv > 0) ? '10' : '20', #Dejarlo como esta
+                            "total_base_igv" => number_format($detail->total, 2, '.', ''),
+                            "porcentaje_igv" => number_format($invoiceValid->igv, 2, '.', ''),  #Dejarlo como esta
+                            "total_igv" => number_format(($detail->total * $igv), 2, '.', ''),
+                            "total_impuestos" => number_format(($detail->total * $igv), 2, '.', ''),
+                            "total_valor_item" => number_format($detail->total, 2, '.', ''),
+                            "total_item" => number_format(($detail->total + ($detail->total * $igv)), 2, '.', '') #TOTAL DEL PRODUCTO
+                        ];
+                }
+
+                $total_operaciones_gravadas = 0;
+                $total_operaciones_exoneradas = $invoiceValid->invoice_total + $invoiceValid->discount_total;
+
+                if($invoiceValid->tax > 0){
+                    $total_operaciones_gravadas = $invoiceValid->invoice_total - $invoiceValid->tax + $invoiceValid->discount_total;
+                    $total_operaciones_exoneradas = 0;
+                }
+                
+                $settings_ = $this->Settings_model->get_settings_facturadorpro();
+
+                /**CONECCCION FACTURADOR PRO */
+                $data = [
+                    "serie_documento" => $settings_[0]->setting_value, //Para boletas la serie debe comenzar por la letra B, seguido de tres dígitos
+                    "numero_documento" => '40',
+                    "fecha_de_emision" => $invoiceValid->bill_date,
+                    "hora_de_emision" => date('H:i:s'),
+                    "codigo_tipo_operacion" => "0101",
+                    "codigo_tipo_documento" => '01', #codigo de tipodocumento de sunat
+                    "codigo_tipo_moneda" => "PEN", #sigla de la moneda
+                    "fecha_de_vencimiento" => $invoiceValid->bill_date,
+                    "numero_orden_de_compra" => '',
+                    "codigo_condicion_de_pago" => "01",
+                    "datos_del_cliente_o_receptor" => [
+                        "codigo_tipo_documento_identidad" => strlen($invoiceValid->company_code) == 8 ? 1 : 6,
+                        "numero_documento" => $invoiceValid->company_code,
+                        "apellidos_y_nombres_o_razon_social" => $invoiceValid->company_name,
+                        "codigo_pais" => "PE",
+                        "ubigeo" => "",
+                        "direccion" => $invoiceValid->address,
+                        "correo_electronico" => '',
+                        "telefono" => $invoiceValid->phone
+                    ],
+                    "totales" => [
+                        "total_descuentos" => number_format($invoiceValid->discount_total, 2, '.', ''),
+                        "total_exportacion" => 0.00,
+                        "total_operaciones_gravadas" => number_format($total_operaciones_gravadas, 2, '.', ''),
+                        "total_operaciones_inafectas" => 0.00,
+                        "total_operaciones_exoneradas" => number_format($total_operaciones_exoneradas, 2, '.', ''),
+                        "total_operaciones_gratuitas" => 0.00,
+                        "total_igv" => $invoiceValid->tax,
+                        "total_impuestos" => number_format($invoiceValid->tax, 2, '.', ''),
+                        "total_valor" => number_format($invoiceValid->invoice_total - $invoiceValid->tax, 2, '.', ''),
+                        "subtotal_venta" => number_format(($invoiceValid->invoice_subtotal + $invoiceValid->tax), 2, '.', ''),
+                        "total_venta" => number_format($invoiceValid->invoice_total, 2, '.', '')
+                    ],
+                    "items" => $products,
+                    "payments" => [
+                        [
+                            "date_of_payment" => $invoiceValid->bill_date,
+                            "payment_method_type_id" => "01",
+                            "payment_destination_id" => null,
+                            "referencia" => null,
+                            "payment" => number_format($invoiceValid->invoice_total, 2, '.', ''),
+                            "payment_received" => 1,
+                            "change" => null
+                        ]
+                    ],
+                    "pagos" => [
+                        [
+                            "codigo_metodo_pago" => "01",
+                            "referencia" => "1",
+                            "codigo_destino_pago" => "cash",
+                            "monto" => number_format($invoiceValid->invoice_total, 2, '.', '')
+                        ]
+                    ]
+        
+                ];
+                $data = array_merge($data, $descuentosAjax);
+
+                $data_json = json_encode($data);
+                // var_dump($data_json);
+
+                $curl = curl_init();
+                curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+
+                curl_setopt_array(
+                    $curl,
+                    array(
+                        CURLOPT_URL => $settings_[2]->setting_value . '/api/documents',
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_ENCODING => '',
+                        CURLOPT_MAXREDIRS => 10,
+                        CURLOPT_TIMEOUT => 0,
+                        CURLOPT_FOLLOWLOCATION => true,
+                        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                        CURLOPT_CUSTOMREQUEST => 'POST',
+                        CURLOPT_POSTFIELDS => $data_json,
+                        CURLOPT_HTTPHEADER => array(
+                            'Content-Type: application/json',
+                            'Authorization: Bearer ' . $settings_[1]->setting_value
+                        ),
+                    )
+                );
+
+                $response = curl_exec($curl);
+                curl_close($curl);
+                
+                $rs = json_decode($response);
+                // var_dump($rs);
+
+                $enviado_sunat = 0;
+                $code_respuesta_sunat = '';
+                $descripcion_sunat_cdr = 'Problemas de conexion con el FACTURADOR PRO';
+
+                $enviado_sunat = ($rs->response != [] && $rs->response->code < 1) ? '1' : '0';
+                // $name_file_sunat = @$rs->data->filename;
+                // $hash_cdr = !empty(@$rs->links->cdr) ? @$rs->data->hash : '';
+                $xml = ($enviado_sunat == '1') ? @$rs->links->xml : null;
+                $pdf = ($enviado_sunat == '1') ? @$rs->links->pdf : null;
+                $cdr = ($enviado_sunat == '1') ? @$rs->links->cdr : null;
+                $external_id = ($enviado_sunat == '1') ? @$rs->data->external_id : '';
+                // $cdr = @$rs->links['cdr'];
+                 
+                if(@$rs->response != []){ 
+                    $code_respuesta_sunat = @$rs->response->code;
+                    $descripcion_sunat_cdr = @$rs->response->description;
+                }
+
+                $data = [
+                    'respuesta_envio' => $descripcion_sunat_cdr,
+                    'codigo_envio' => $code_respuesta_sunat,
+                    'external_id' => $external_id,
+                    'url_cdr' => $cdr,
+                    'url_xml' => $xml,
+                    'url_pdf' => $pdf,
+                ];
+
+                $this->Invoices_model->update_invoice_respuesta_pro($data, $invoice_id);
+
+            }
+
+
+
             echo json_encode(array("success" => true, "invoice_id" => $item_info->invoice_id, "data" => $this->_make_payment_row($item_info), "invoice_total_view" => $this->_get_invoice_total_view($item_info->invoice_id), 'id' => $invoice_payment_id, 'message' => app_lang('record_saved')));
         } else {
             echo json_encode(array("success" => false, 'message' => app_lang('error_occurred')));

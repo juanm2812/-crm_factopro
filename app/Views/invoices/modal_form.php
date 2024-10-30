@@ -77,11 +77,18 @@
             <?php } else { ?>
                 <div class="form-group">
                     <div class="row">
-                        <label for="invoice_client_id" class=" col-md-3"><?php echo app_lang('client'); ?></label>
+                        <label for="invoice_client_id" class="col-md-3 d-flex align-items-center">
+                            <?php echo app_lang('client'); ?>
+                            <?php echo modal_anchor(get_uri("clients/modal_form"), "<i data-feather='plus-circle' class='icon-16'></i> ", array("class" => "btn btn-default ms-5", "title" => app_lang('add_client'))); ?>
+                        </label>
+                        
                         <div class="col-md-9">
-                            <?php
-                            echo form_dropdown("invoice_client_id", $clients_dropdown, array($model_info->client_id), "class='select2 validate-hidden' id='invoice_client_id' data-rule-required='true', data-msg-required='" . app_lang('field_required') . "'");
-                            ?>
+                            <div class="input-group">
+                                <?php
+                                echo form_dropdown("invoice_client_id", $clients_dropdown, array($model_info->client_id), 
+                                    "class='select2 validate-hidden form-control' id='invoice_client_id' data-rule-required='true' data-msg-required='" . app_lang('field_required') . "'");
+                                ?>
+                            </div>
                         </div>
                     </div>
                 </div>

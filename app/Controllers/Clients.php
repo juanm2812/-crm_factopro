@@ -105,12 +105,14 @@ class Clients extends Security_Controller {
 
         $this->validate_submitted_data(array(
             "id" => "numeric",
-            "company_name" => "required"
+            "company_name" => "required",
+            "rucDNI" => "required"
         ));
 
         $company_name = $this->request->getPost('company_name');
 
         $data = array(
+            "company_code" => $this->request->getPost('rucDNI'),
             "company_name" => $company_name,
             "type" => $this->request->getPost('account_type'),
             "address" => $this->request->getPost('address'),

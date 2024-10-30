@@ -298,6 +298,57 @@
                                 </div>
                             </div>
 
+                            <div class="form-group">
+                                <div class="row">
+                                    <label for="url_facturadorpro" class=" col-md-2">URL Facturador PRO</label>
+                                    <div class=" col-md-10">
+                                        <?php
+                                        echo form_input(array(
+                                            "id" => "url_facturadorpro",
+                                            "name" => "url_facturadorpro",
+                                            "value" => get_setting('url_facturadorpro'),
+                                            "class" => "form-control",
+                                            "data-rule-required" => true,
+                                            "data-msg-required" => app_lang("field_required"),
+                                        ));
+                                        ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="row">
+                                    <label for="token_facturadorpro" class=" col-md-2">Token Facturador PRO</label>
+                                    <div class=" col-md-10">
+                                        <?php
+                                        echo form_input(array(
+                                            "id" => "token_facturadorpro",
+                                            "name" => "token_facturadorpro",
+                                            "value" => get_setting('token_facturadorpro'),
+                                            "class" => "form-control",
+                                            "data-rule-required" => true,
+                                            "data-msg-required" => app_lang("field_required"),
+                                        ));
+                                        ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="row">
+                                    <label for="serie_facturadorpro" class=" col-md-2">Serie Factura</label>
+                                    <div class=" col-md-10">
+                                        <?php
+                                        echo form_input(array(
+                                            "id" => "serie_facturadorpro",
+                                            "name" => "serie_facturadorpro",
+                                            "value" => get_setting('serie_facturadorpro'),
+                                            "class" => "form-control",
+                                            "data-rule-required" => true,
+                                            "data-msg-required" => app_lang("field_required"),
+                                        ));
+                                        ?>
+                                    </div>
+                                </div>
+                            </div>
                             <?php app_hooks()->do_action('app_hook_general_settings_extension'); ?>
 
                         </div>
