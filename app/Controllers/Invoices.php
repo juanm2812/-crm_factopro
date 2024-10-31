@@ -1830,6 +1830,192 @@ class Invoices extends Security_Controller {
 
         return $row_data;
     }
+
+    function invoice_anulacion_form($invoice_id) {
+        if (!$this->can_edit_invoices()) {
+            app_redirect("forbidden");
+        }
+
+        if ($invoice_id) {
+            validate_numeric_value($invoice_id);
+            $options = array("id" => $invoice_id);
+            $invoice_info = $this->Invoices_model->get_details($options)->getRow();
+            $view_data['invoice_info'] = $invoice_info;
+            // var_dump($view_data);
+            return $this->template->view('invoices/invoice_anulacion_form', $view_data);
+        } else {
+            show_404();
+        }
+    }
+    
+    function anulacion() {
+
+        if (!$this->can_edit_invoices()) {
+            app_redirect("forbidden");
+        }
+
+        $this->validate_submitted_data(array(
+            "external_id" => "required",
+            "fecha_envio" => "required",
+            "motivo" => "required",
+        ));
+        
+        $external_id = $this->request->getPost('external_id');
+        $fecha_envio = $this->request->getPost('fecha_envio');
+        $motivo = $this->request->getPost('motivo');
+        $invoice_id = $this->request->getPost('id');
+
+        // if ($tipo_doc == 1) {
+            $data = [
+                "fecha_de_emision_de_documentos" => $fecha_envio,
+                "documentos" => [
+                    [
+                        "external_id" => $external_id,
+                        "motivo_anulacion" => $motivo
+                    ]
+                ]
+            ];
+            $ruta = "/voided";
+        // }
+
+        $settings_ = $this->Settings_model->get_settings_facturadorpro();
+
+        $data_json = json_encode($data);
+        // var_dump($data);
+        $curl = curl_init();
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+
+        curl_setopt_array(
+            $curl,
+            array(
+                CURLOPT_URL => $settings_[2]->setting_value . '/api' . $ruta,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => '',
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 0,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => 'POST',
+                CURLOPT_POSTFIELDS => $data_json,
+                CURLOPT_HTTPHEADER => array(
+                    'Content-Type: application/json',
+                    'Authorization: Bearer ' . $settings_[1]->setting_value
+                ),
+            )
+        );
+
+        $response = curl_exec($curl);
+
+        curl_close($curl);
+
+        $rsp = json_decode($response);
+        // var_dump($rsp);
+        $enviado_sunat = ($rsp->success) ? '1' : '0';
+
+        $resp_envio_ticket = @$rsp->data->ticket;
+
+        $respuesta_descp = '';
+
+        if ($enviado_sunat == 1) {
+            // $cabecera['ticket'] = $resp_envio_ticket;
+            // $cabecera['external_id'] = @$rsp->data->external_id;
+
+            $respuesta_descp = 'Baja pendiente';
+
+            $data = [
+                'external_id_anulacion' => @$rsp->data->external_id,
+                'motivo_anulacion' => $motivo,
+                'ticket_anulacion' => $resp_envio_ticket,
+                'fecha_anulacion' => $fecha_envio,
+                'respuesta_anulacion' => $respuesta_descp
+            ];
+
+            $this->Invoices_model->update_invoice_respuesta_pro($data, $invoice_id);
+
+            echo json_encode(array("success" => true, "invoice_id" => $invoice_id, 'message' => $respuesta_descp));
+
+        }else{
+            echo json_encode(array("success" => false, 'message' => 'Problemas con la BAJA FACT.PRO'));
+        }
+        
+    }
+
+    function consultarTicket($external_id, $ticket_anulacion, $invoice_id) {
+
+        if (!$this->can_edit_invoices()) {
+            app_redirect("forbidden");
+        }
+
+        // if ($tipo_doc == 1) {
+            $data = [
+                "external_id" => $external_id,
+                "ticket" => $ticket_anulacion
+            ];
+            $ruta = '/voided/status';
+        // }
+
+        $settings_ = $this->Settings_model->get_settings_facturadorpro();
+
+        $data_json = json_encode($data);
+        // var_dump($data);
+        $curl = curl_init();
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+
+        curl_setopt_array(
+            $curl,
+            array(
+                CURLOPT_URL => $settings_[2]->setting_value . '/api' . $ruta,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => '',
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 0,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => 'POST',
+                CURLOPT_POSTFIELDS => $data_json,
+                CURLOPT_HTTPHEADER => array(
+                    'Content-Type: application/json',
+                    'Authorization: Bearer ' . $settings_[1]->setting_value
+                ),
+            )
+        );
+
+        $response = curl_exec($curl);
+
+        curl_close($curl);
+
+        $rsp = json_decode($response);
+        // var_dump($rsp);
+        $enviado_sunat = ($rsp->success && $rsp->response->is_accepted) ? '1' : '0';
+
+        $enviado_sunat_ticket = ($rsp->success) ? '1' : '0';
+
+        $respuesta_descp = '';
+
+        if ($enviado_sunat == 1 && $enviado_sunat_ticket == 1) {
+            // $cabecera['ticket'] = $resp_envio_ticket;
+            // $cabecera['external_id'] = @$rsp->data->external_id;
+
+            $respuesta_descp = @$rsp->response->description;
+            $xml = @$rsp->links->xml;
+            $cdr = @$rsp->links->cdr;
+
+            $data = [
+                'anulado' => 1,
+                'respuesta_anulacion' => $respuesta_descp,
+                'url_cdr' => $cdr,
+                'url_xml' => $xml,
+            ];
+
+            $this->Invoices_model->update_invoice_respuesta_pro($data, $invoice_id);
+
+            echo json_encode(array("success" => true, "invoice_id" => $invoice_id, 'message' => $respuesta_descp));
+
+        }else{
+            echo json_encode(array("success" => false, 'message' => 'Problemas con la Consulta FACT.PRO'));
+        }
+        
+    }
 }
 
 /* End of file invoices.php */

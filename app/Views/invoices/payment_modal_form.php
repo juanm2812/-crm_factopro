@@ -107,6 +107,9 @@
                         $("#invoice-total-section").html(result.invoice_total_view);
                         if (typeof updateInvoiceStatusBar == 'function') {
                             updateInvoiceStatusBar(result.invoice_id);
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1000);
                         }
                     }
 

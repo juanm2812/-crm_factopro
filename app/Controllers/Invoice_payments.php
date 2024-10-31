@@ -127,8 +127,8 @@ class Invoice_payments extends Security_Controller {
             $options = array("id" => $invoice_payment_id);
             $item_info = $this->Invoice_payments_model->get_details($options)->getRow();
             $invoiceValid = $this->Invoices_model->get_invoice_by_id($invoice_id);
-
-            if(empty($invoiceValid->codigo_envio)){
+            // var_dump($item_info);
+            if(empty($invoiceValid->codigo_envio) || $invoiceValid->codigo_envio != 0){
 
                 $invoiceDetail = $this->Invoice_items_model->get_details(['invoice_id' => $invoice_id])->getResult();
 
@@ -190,10 +190,66 @@ class Invoice_payments extends Security_Controller {
                 
                 $settings_ = $this->Settings_model->get_settings_facturadorpro();
 
+                preg_match('/#(\d+)/', $invoiceValid->display_id, $matches);
+
+                // El número se almacenará en `$matches[1]`
+                $invoiceNumber = $matches[1] ?? null;
+                $pagos = [];
+                $codigo_metodo_pago = '';
+                switch($item_info->payment_method_title){
+                    case 'Contado':
+                    case 'Cash':
+                        $codigo_metodo_pago = '01';
+                        $pagos = [
+                            "payments" => [
+                                [
+                                    "date_of_payment" => $item_info->payment_date,
+                                    "payment_method_type_id" => $codigo_metodo_pago,
+                                    "payment_destination_id" => null,
+                                    "referencia" => null,
+                                    "payment" => number_format($invoiceValid->invoice_total, 2, '.', ''),
+                                    "payment_received" => 1,
+                                    "change" => null
+                                ]
+                            ],
+                            "pagos" => [
+                                [
+                                    "codigo_metodo_pago" => $codigo_metodo_pago,
+                                    "referencia" => "1",
+                                    "codigo_destino_pago" => 'cash',
+                                    "monto" => number_format($invoiceValid->invoice_total, 2, '.', '')
+                                ]
+                            ]
+                        ];
+                        break;
+                    // case 'Crédito':
+                    // case 'Credito':
+                    // case 'credito':
+                    // case 'crédito':
+                    // case 'Tarjeta de crédito':
+                    // case 'Tarjeta de credito':
+                    // case 'tarjeta de credito':
+                    // case 'tarjeta de crédito':
+                    // case 'tarjeta crédito':
+                    // case 'tarjeta credito':
+                    default:
+                        $codigo_metodo_pago = '02';
+                        $pagos = [
+                            "cuotas" => [
+                                [
+                                    "fecha" => $item_info->payment_date,
+                                    "codigo_tipo_moneda" => "PEN",
+                                    "monto" => number_format(($invoiceValid->invoice_total), 2, '.', '')
+                                ]
+                            ],
+                        ];
+                        break;
+                }
                 /**CONECCCION FACTURADOR PRO */
                 $data = [
                     "serie_documento" => $settings_[0]->setting_value, //Para boletas la serie debe comenzar por la letra B, seguido de tres dígitos
-                    "numero_documento" => '40',
+                    "numero_documento" => $invoiceNumber,
+                    // "numero_documento" => '58',
                     "fecha_de_emision" => $invoiceValid->bill_date,
                     "hora_de_emision" => date('H:i:s'),
                     "codigo_tipo_operacion" => "0101",
@@ -201,7 +257,7 @@ class Invoice_payments extends Security_Controller {
                     "codigo_tipo_moneda" => "PEN", #sigla de la moneda
                     "fecha_de_vencimiento" => $invoiceValid->bill_date,
                     "numero_orden_de_compra" => '',
-                    "codigo_condicion_de_pago" => "01",
+                    "codigo_condicion_de_pago" => $codigo_metodo_pago,
                     "datos_del_cliente_o_receptor" => [
                         "codigo_tipo_documento_identidad" => strlen($invoiceValid->company_code) == 8 ? 1 : 6,
                         "numero_documento" => $invoiceValid->company_code,
@@ -221,36 +277,17 @@ class Invoice_payments extends Security_Controller {
                         "total_operaciones_gratuitas" => 0.00,
                         "total_igv" => $invoiceValid->tax,
                         "total_impuestos" => number_format($invoiceValid->tax, 2, '.', ''),
-                        "total_valor" => number_format($invoiceValid->invoice_total - $invoiceValid->tax, 2, '.', ''),
+                        "total_valor" => number_format(($invoiceValid->invoice_total + $invoiceValid->discount_total) - $invoiceValid->tax, 2, '.', ''),
                         "subtotal_venta" => number_format(($invoiceValid->invoice_subtotal + $invoiceValid->tax), 2, '.', ''),
-                        "total_venta" => number_format($invoiceValid->invoice_total, 2, '.', '')
+                        "total_venta" => number_format(($invoiceValid->invoice_total), 2, '.', '')
                     ],
-                    "items" => $products,
-                    "payments" => [
-                        [
-                            "date_of_payment" => $invoiceValid->bill_date,
-                            "payment_method_type_id" => "01",
-                            "payment_destination_id" => null,
-                            "referencia" => null,
-                            "payment" => number_format($invoiceValid->invoice_total, 2, '.', ''),
-                            "payment_received" => 1,
-                            "change" => null
-                        ]
-                    ],
-                    "pagos" => [
-                        [
-                            "codigo_metodo_pago" => "01",
-                            "referencia" => "1",
-                            "codigo_destino_pago" => "cash",
-                            "monto" => number_format($invoiceValid->invoice_total, 2, '.', '')
-                        ]
-                    ]
-        
+                    "items" => $products,        
                 ];
+
+                $data = array_merge($data, $pagos);
                 $data = array_merge($data, $descuentosAjax);
 
                 $data_json = json_encode($data);
-                // var_dump($data_json);
 
                 $curl = curl_init();
                 curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
@@ -280,40 +317,44 @@ class Invoice_payments extends Security_Controller {
                 $rs = json_decode($response);
                 // var_dump($rs);
 
-                $enviado_sunat = 0;
-                $code_respuesta_sunat = '';
-                $descripcion_sunat_cdr = 'Problemas de conexion con el FACTURADOR PRO';
-
-                $enviado_sunat = ($rs->response != [] && $rs->response->code < 1) ? '1' : '0';
-                // $name_file_sunat = @$rs->data->filename;
-                // $hash_cdr = !empty(@$rs->links->cdr) ? @$rs->data->hash : '';
-                $xml = ($enviado_sunat == '1') ? @$rs->links->xml : null;
-                $pdf = ($enviado_sunat == '1') ? @$rs->links->pdf : null;
-                $cdr = ($enviado_sunat == '1') ? @$rs->links->cdr : null;
-                $external_id = ($enviado_sunat == '1') ? @$rs->data->external_id : '';
-                // $cdr = @$rs->links['cdr'];
-                 
-                if(@$rs->response != []){ 
-                    $code_respuesta_sunat = @$rs->response->code;
-                    $descripcion_sunat_cdr = @$rs->response->description;
+                if($rs->success){
+                    $enviado_sunat = 0;
+                    $code_respuesta_sunat = '';
+                    $descripcion_sunat_cdr = 'Problemas de conexion con el FACTURADOR PRO';
+    
+                    $enviado_sunat = ($rs->response != [] && $rs->response->code < 1) ? '1' : '0';
+                    // $name_file_sunat = @$rs->data->filename;
+                    // $hash_cdr = !empty(@$rs->links->cdr) ? @$rs->data->hash : '';
+                    $xml = ($enviado_sunat == '1') ? @$rs->links->xml : null;
+                    $pdf = ($enviado_sunat == '1') ? @$rs->links->pdf : null;
+                    $cdr = ($enviado_sunat == '1') ? @$rs->links->cdr : null;
+                    $external_id = ($enviado_sunat == '1') ? @$rs->data->external_id : '';
+                    // $cdr = @$rs->links['cdr'];
+                     
+                    if(@$rs->response != []){ 
+                        $code_respuesta_sunat = @$rs->response->code;
+                        $descripcion_sunat_cdr = @$rs->response->description;
+                    }
+    
+                    $data = [
+                        'respuesta_envio' => $descripcion_sunat_cdr,
+                        'codigo_envio' => $code_respuesta_sunat,
+                        'external_id' => $external_id,
+                        'url_cdr' => $cdr,
+                        'url_xml' => $xml,
+                        'url_pdf' => $pdf,
+                    ];
+    
+                    $this->Invoices_model->update_invoice_respuesta_pro($data, $invoice_id);
+                    echo json_encode(array("success" => true, "invoice_id" => $item_info->invoice_id, "data" => $this->_make_payment_row($item_info), "invoice_total_view" => $this->_get_invoice_total_view($item_info->invoice_id), 'id' => $invoice_payment_id, 'message' => app_lang('record_saved')));
+                }else{
+                    echo json_encode(array("success" => false, 'message' => $rs->message . ' | El pago se realizó correctamente.'));
                 }
 
-                $data = [
-                    'respuesta_envio' => $descripcion_sunat_cdr,
-                    'codigo_envio' => $code_respuesta_sunat,
-                    'external_id' => $external_id,
-                    'url_cdr' => $cdr,
-                    'url_xml' => $xml,
-                    'url_pdf' => $pdf,
-                ];
-
-                $this->Invoices_model->update_invoice_respuesta_pro($data, $invoice_id);
-
+            }else{
+                echo json_encode(array("success" => true, "invoice_id" => $item_info->invoice_id, "data" => $this->_make_payment_row($item_info), "invoice_total_view" => $this->_get_invoice_total_view($item_info->invoice_id), 'id' => $invoice_payment_id, 'message' => app_lang('record_saved')));
             }
 
-
-
-            echo json_encode(array("success" => true, "invoice_id" => $item_info->invoice_id, "data" => $this->_make_payment_row($item_info), "invoice_total_view" => $this->_get_invoice_total_view($item_info->invoice_id), 'id' => $invoice_payment_id, 'message' => app_lang('record_saved')));
         } else {
             echo json_encode(array("success" => false, 'message' => app_lang('error_occurred')));
         }

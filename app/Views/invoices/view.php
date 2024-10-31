@@ -11,7 +11,7 @@
                                 echo app_lang("credit_note") . " - ";
                             }
                             ?>
-                            <?php echo $invoice_info->display_id; ?>
+                            <?php echo $invoice_info->display_id . (!empty($invoice_info->ticket_anulacion) ? (" | " . $invoice_info->respuesta_anulacion) : (($invoice_info->codigo_envio == '0') ? (" | " . $invoice_info->respuesta_envio) : '') ); ?>
                             <?php
                             if ($invoice_info->recurring) {
                                 $recurring_status_class = "text-primary";
@@ -58,12 +58,15 @@
                                                 Imprimir
                                             </a>
                                         </li> -->
-                                        <li role="presentation">
-                                            <a href="<?php echo $invoice_info->external_id; ?>" title="Descargar PDF" class="dropdown-item">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-download icon-16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> 
-                                                Anular
-                                            </a>
-                                        </li>
+                                        <?php if(empty($invoice_info->ticket_anulacion)){ ?>
+                                            <li role="presentation"><?php echo modal_anchor(get_uri("invoices/invoice_anulacion_form/" . $invoice_info->id), "<i data-feather='check-circle' class='icon-16'></i> " . 'Anular Doc.', array("title" => 'Anular Doc.', "class" => "dropdown-item", "tabindex" => "-1", "data-post-id" => $invoice_info->id, "role" => "menuitem",)); ?></li>
+                                        <?php }else if($invoice_info->anulado == 0){ ?>
+                                            <li role="presentation">
+                                                <a href="#" title="Consultar Ticket" id="consultarTicket" class="dropdown-item" tabindex="-1" data-post-id="8" role="menuitem" data-act="ajax-modal" data-title="Consultar Ticket"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-check-circle icon-16"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> 
+                                                    Consultar Ticket
+                                                </a>
+                                            </li>
+                                        <?php } ?>
                                     <?php }else{ ?>
                                         <li role="presentation"><?php echo anchor(get_uri("invoices/download_pdf/" . $invoice_info->id), "<i data-feather='download' class='icon-16'></i> " . app_lang('download_pdf'), array("title" => app_lang('download_pdf'), "class" => "dropdown-item")); ?> </li>
                                         <li role="presentation"><?php echo anchor(get_uri("invoices/download_pdf/" . $invoice_info->id . "/view"), "<i data-feather='file-text' class='icon-16'></i> " . app_lang('view_pdf'), array("title" => app_lang('view_pdf'), "target" => "_blank", "class" => "dropdown-item")); ?> </li>
@@ -102,7 +105,7 @@
                     </div>
 
                     <ul id="invoice-tabs" data-bs-toggle="ajax-tab" class="nav nav-pills rounded classic mb20 scrollable-tabs border-white" role="tablist">
-                        <li><a role="presentation" <?php if($invoice_info->codigo_envio == '0'){echo "style='background:#70ed49!important'";}?> data-bs-toggle="tab"  href="<?php echo_uri("invoices/details/" . $invoice_info->id); ?>" data-bs-target="<?php if($invoice_info->codigo_envio == '0'){ echo '#invoice-details-section2'; }else{ echo '#invoice-details-section'; } ?>"><?php echo app_lang("details"); ?></a></li>
+                        <li><a role="presentation" <?php if($invoice_info->codigo_envio == '0' && $invoice_info->anulado == 0){echo "style='background:#70ed49!important'";}else if($invoice_info->anulado == 1){ echo "style='background:red!important; color: #0000000'";}?> data-bs-toggle="tab"  href="<?php echo_uri("invoices/details/" . $invoice_info->id); ?>" data-bs-target="<?php if($invoice_info->codigo_envio == '0'){ echo '#invoice-details-section2'; }else{ echo '#invoice-details-section'; } ?>"><?php echo app_lang("details"); ?></a></li>
                         <?php if ($invoice_info->type == "invoice") { ?>
                             <li><a role="presentation" data-bs-toggle="tab" href="<?php echo_uri("invoices/payments/" . $invoice_info->id); ?>" data-bs-target="#invoice-payments-section"><?php echo app_lang('payments'); ?></a></li>
                             <?php if ($invoice_info->recurring) { ?>
@@ -178,5 +181,25 @@
     window.onafterprint = function () {
         location.reload();
     };
+
+    $("#consultarTicket").click(function () {
+        appLoader.show();
+        $.ajax({
+            url: "<?php echo get_uri('invoices/consultarTicket/' . $invoice_info->external_id_anulacion . '/' . $invoice_info->ticket_anulacion . '/' . $invoice_info->id) ?>",
+            dataType: "json",
+            success: function (result) {
+                if (result.success) {
+                    appAlert.success(result.message, {duration: 10000});
+                    appLoader.hide();
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    appLoader.hide();
+                    appAlert.error(result.message);
+                }
+            }
+        });
+    })
 
 </script>
