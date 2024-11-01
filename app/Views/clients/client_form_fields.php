@@ -454,8 +454,8 @@
                 // console.log(response);
                 if(response.success){
                     const data = response.data
-                    $("#company_name").val(data.nombre_o_razon_social)
-                    $("#address").val(data.direccion_completa)
+                    $("#company_name").val(data.nombre_o_razon_social ?? data.nombre_completo)
+                    $("#address").val(data.direccion_completa ?? data.direccion)
                     $("#city").val(data.distrito ?? '')
 
                 }else{

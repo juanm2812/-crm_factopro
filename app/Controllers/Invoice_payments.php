@@ -127,8 +127,8 @@ class Invoice_payments extends Security_Controller {
             $options = array("id" => $invoice_payment_id);
             $item_info = $this->Invoice_payments_model->get_details($options)->getRow();
             $invoiceValid = $this->Invoices_model->get_invoice_by_id($invoice_id);
-            // var_dump($item_info);
-            if(empty($invoiceValid->codigo_envio) || $invoiceValid->codigo_envio != 0){
+            // var_dump($invoiceValid);
+            if($invoiceValid->url_cdr == '' || $invoiceValid->codigo_envio > 0){
 
                 $invoiceDetail = $this->Invoice_items_model->get_details(['invoice_id' => $invoice_id])->getResult();
 
@@ -195,32 +195,15 @@ class Invoice_payments extends Security_Controller {
                 // El número se almacenará en `$matches[1]`
                 $invoiceNumber = $matches[1] ?? null;
                 $pagos = [];
+                $cuotas = [];
+
                 $codigo_metodo_pago = '';
                 switch($item_info->payment_method_title){
                     case 'Contado':
                     case 'Cash':
                         $codigo_metodo_pago = '01';
-                        $pagos = [
-                            "payments" => [
-                                [
-                                    "date_of_payment" => $item_info->payment_date,
-                                    "payment_method_type_id" => $codigo_metodo_pago,
-                                    "payment_destination_id" => null,
-                                    "referencia" => null,
-                                    "payment" => number_format($invoiceValid->invoice_total, 2, '.', ''),
-                                    "payment_received" => 1,
-                                    "change" => null
-                                ]
-                            ],
-                            "pagos" => [
-                                [
-                                    "codigo_metodo_pago" => $codigo_metodo_pago,
-                                    "referencia" => "1",
-                                    "codigo_destino_pago" => 'cash',
-                                    "monto" => number_format($invoiceValid->invoice_total, 2, '.', '')
-                                ]
-                            ]
-                        ];
+                        $monto_pago = number_format($invoiceValid->invoice_total, 2, '.', '');
+
                         break;
                     // case 'Crédito':
                     // case 'Credito':
@@ -234,17 +217,49 @@ class Invoice_payments extends Security_Controller {
                     // case 'tarjeta credito':
                     default:
                         $codigo_metodo_pago = '02';
-                        $pagos = [
+                        $monto_pago = unformat_currency($this->request->getPost('invoice_payment_amount'));
+                        if($invoiceValid->invoice_total == $this->request->getPost('invoice_payment_amount')){
+                            $monto_cutoa = $invoiceValid->invoice_total;
+                        }else{
+                            $monto_cutoa = number_format(($invoiceValid->invoice_total) - unformat_currency($this->request->getPost('invoice_payment_amount')), 2, '.', '');
+                        }
+                        
+                        $cuotas = [
                             "cuotas" => [
                                 [
                                     "fecha" => $item_info->payment_date,
                                     "codigo_tipo_moneda" => "PEN",
-                                    "monto" => number_format(($invoiceValid->invoice_total), 2, '.', '')
+                                    "monto" => $monto_cutoa
                                 ]
                             ],
                         ];
                         break;
                 }
+
+                if(unformat_currency($this->request->getPost('invoice_payment_amount')) > 0){
+                    $pagos = [
+                        "payments" => [
+                            [
+                                "date_of_payment" => $item_info->payment_date,
+                                "payment_method_type_id" => $codigo_metodo_pago,
+                                "payment_destination_id" => null,
+                                "referencia" => null,
+                                "payment" => $monto_pago,
+                                "payment_received" => 1,
+                                "change" => null
+                            ]
+                        ],
+                        "pagos" => [
+                            [
+                                "codigo_metodo_pago" => $codigo_metodo_pago,
+                                "referencia" => "1",
+                                "codigo_destino_pago" => 'cash',
+                                "monto" => $monto_pago
+                            ]
+                        ]
+                    ];
+                }
+
                 /**CONECCCION FACTURADOR PRO */
                 $data = [
                     "serie_documento" => $settings_[0]->setting_value, //Para boletas la serie debe comenzar por la letra B, seguido de tres dígitos
@@ -285,6 +300,7 @@ class Invoice_payments extends Security_Controller {
                 ];
 
                 $data = array_merge($data, $pagos);
+                $data = array_merge($data, $cuotas);
                 $data = array_merge($data, $descuentosAjax);
 
                 $data_json = json_encode($data);
