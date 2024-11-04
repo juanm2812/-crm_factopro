@@ -32,12 +32,12 @@ class Database extends Config
 	 */
 	public $default = [
 		'DSN'      => '',
-		'hostname' => 'enter_hostname',
-		'username' => 'enter_db_username',
-		'password' => 'enter_db_password',
-		'database' => 'enter_database_name',
+		'hostname' => '127.0.0.1',
+		'username' => 'root',
+		'password' => '',
+		'database' => 'crm',
 		'DBDriver' => 'MySQLi',
-		'DBPrefix' => 'enter_dbprefix',
+		'DBPrefix' => 'rise_',
 		'pConnect' => false,
 		'DBDebug'  => (ENVIRONMENT !== 'production'),
 		'charset'  => 'utf8',
