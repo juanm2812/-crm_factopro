@@ -297,7 +297,23 @@
                                     </div>
                                 </div>
                             </div>
-
+                            <div class="form-group">
+                                <div class="row">
+                                    <label for="token_apiperu" class=" col-md-2">Token API Perú</label>
+                                    <div class=" col-md-10">
+                                        <?php
+                                        echo form_input(array(
+                                            "id" => "token_apiperu",
+                                            "name" => "token_apiperu",
+                                            "value" => get_setting('token_apiperu'),
+                                            "class" => "form-control",
+                                            "data-rule-required" => true,
+                                            "data-msg-required" => app_lang("field_required"),
+                                        ));
+                                        ?>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="form-group">
                                 <div class="row">
                                     <label for="url_facturadorpro" class=" col-md-2">URL Facturador PRO</label>

@@ -443,7 +443,7 @@
                 "timeout": 0,
                 "headers": {
                     "Content-Type": "application/json",
-                    "Authorization": "Bearer 5b2e3b657920d5d697d9c085a25e15dbdf3676a123c2f0bc596d612b8833619c"
+                    "Authorization": "Bearer <?php echo get_setting('token_apiperu'); ?>"
                 },
                 "data": JSON.stringify({
                     [type]: $("#rucDNI").val()

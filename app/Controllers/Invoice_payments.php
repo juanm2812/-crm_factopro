@@ -311,7 +311,7 @@ class Invoice_payments extends Security_Controller {
                 curl_setopt_array(
                     $curl,
                     array(
-                        CURLOPT_URL => $settings_[2]->setting_value . '/api/documents',
+                        CURLOPT_URL => $settings_[3]->setting_value . '/api/documents',
                         CURLOPT_RETURNTRANSFER => true,
                         CURLOPT_ENCODING => '',
                         CURLOPT_MAXREDIRS => 10,
@@ -322,7 +322,7 @@ class Invoice_payments extends Security_Controller {
                         CURLOPT_POSTFIELDS => $data_json,
                         CURLOPT_HTTPHEADER => array(
                             'Content-Type: application/json',
-                            'Authorization: Bearer ' . $settings_[1]->setting_value
+                            'Authorization: Bearer ' . $settings_[2]->setting_value
                         ),
                     )
                 );

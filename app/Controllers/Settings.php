@@ -22,7 +22,7 @@ class Settings extends Security_Controller {
     }
 
     function save_general_settings() {
-        $settings = array("site_logo", "favicon", "show_background_image_in_signin_page", "show_logo_in_signin_page", "app_title", "accepted_file_formats", "landing_page", "rows_per_page", "item_purchase_code", "scrollbar", "enable_rich_text_editor", "show_theme_color_changer", "default_theme_color", "enable_audio_recording", "url_facturadorpro", "token_facturadorpro", "serie_facturadorpro");
+        $settings = array("site_logo", "favicon", "show_background_image_in_signin_page", "show_logo_in_signin_page", "app_title", "accepted_file_formats", "landing_page", "rows_per_page", "item_purchase_code", "scrollbar", "enable_rich_text_editor", "show_theme_color_changer", "default_theme_color", "enable_audio_recording", "url_facturadorpro", "token_facturadorpro", "serie_facturadorpro", "token_apiperu");
         $has_php_file_format = false;
 
         foreach ($settings as $setting) {
