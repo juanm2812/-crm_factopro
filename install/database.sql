@@ -1707,6 +1707,7 @@ INSERT INTO `settings` (`setting_name`, `setting_value`, `type`, `deleted`) VALU
 ('order_color', '#000000', 'app', 0),
 ('proposal_color', '#000000', 'app', 0),
 ('serie_facturadorpro', '', 'app', 0),
+('serie2_facturadorpro', '', 'app', 0),
 ('show_theme_color_changer', 'yes', 'app', 0),
 ('signin_page_background', 'sigin-background-image.jpg', 'app', 0),
 ('site_logo', 'default-stie-logo.png', 'app', 0),

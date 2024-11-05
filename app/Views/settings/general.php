@@ -365,6 +365,23 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="form-group">
+                                <div class="row">
+                                    <label for="serie2_facturadorpro" class=" col-md-2">Serie Boleta</label>
+                                    <div class=" col-md-10">
+                                        <?php
+                                        echo form_input(array(
+                                            "id" => "serie2_facturadorpro",
+                                            "name" => "serie2_facturadorpro",
+                                            "value" => get_setting('serie2_facturadorpro'),
+                                            "class" => "form-control",
+                                            "data-rule-required" => true,
+                                            "data-msg-required" => app_lang("field_required"),
+                                        ));
+                                        ?>
+                                    </div>
+                                </div>
+                            </div>
                             <?php app_hooks()->do_action('app_hook_general_settings_extension'); ?>
 
                         </div>

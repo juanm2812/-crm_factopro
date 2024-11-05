@@ -635,4 +635,14 @@ class Invoices_model extends Crud_model {
         return $this->ci_save($data, $invoice_id);
     }
 
+    function get_count_documents($documento) {
+        $table = $this->db->prefixTable('invoices');
+        
+        $sql = "SELECT COUNT(*) AS total FROM $table WHERE documento = ?";
+        $query = $this->db->query($sql, [$documento]);
+        $result = $query->getRow();
+    
+        return $result ? (int)$result->total : 0;
+    }    
+
 }

@@ -11,7 +11,7 @@
                                 echo app_lang("credit_note") . " - ";
                             }
                             ?>
-                            <?php echo $invoice_info->display_id . (!empty($invoice_info->ticket_anulacion) ? (" | " . $invoice_info->respuesta_anulacion) : (($invoice_info->codigo_envio == '0' || $invoice_info->codigo_envio > 0) ? (" | " . $invoice_info->respuesta_envio) : '') ); ?>
+                            <?php echo ((!empty($invoice_info->documento) ? ((($invoice_info->documento == '01') ? 'FACTURA' : 'BOLETA') . ' N° ' . $invoice_info->numero_doc) : $invoice_info->display_id)) . (!empty($invoice_info->ticket_anulacion) ? (" | " . $invoice_info->respuesta_anulacion) : (($invoice_info->codigo_envio == '0' || $invoice_info->codigo_envio > 0) ? (" | " . $invoice_info->respuesta_envio) : '') ); ?>
                             <?php
                             if ($invoice_info->recurring) {
                                 $recurring_status_class = "text-primary";

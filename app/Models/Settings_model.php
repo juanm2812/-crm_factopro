@@ -48,13 +48,4 @@ class Settings_model extends Crud_model {
         return $this->db->query($sql);
     }
 
-    function get_settings_facturadorpro() {
-        $table = $this->db->prefixTable('settings');
-    
-        $sql = "SELECT * FROM $table WHERE setting_name IN ('url_facturadorpro', 'token_facturadorpro', 'serie_facturadorpro', 'token_apiperu')";
-        $query = $this->db->query($sql);
-    
-        return $query->getResult();
-    }
-
 }

@@ -218,7 +218,8 @@ class Invoices extends Security_Controller {
             "id" => "numeric",
             "invoice_client_id" => "required|numeric",
             "invoice_bill_date" => "required",
-            "invoice_due_date" => "required"
+            "invoice_due_date" => "required",
+            "invoice_documento" => "required"
         ));
 
         $client_id = $this->request->getPost('invoice_client_id');
@@ -232,6 +233,8 @@ class Invoices extends Security_Controller {
         $invoice_bill_date = $this->request->getPost('invoice_bill_date');
         $invoice_due_date = $this->request->getPost('invoice_due_date');
 
+        $tot_doc = $this->Invoices_model->get_count_documents($this->request->getPost('invoice_documento'));
+
         $_invoice_data = array(
             "client_id" => $client_id,
             "project_id" => $this->request->getPost('invoice_project_id') ? $this->request->getPost('invoice_project_id') : 0,
@@ -243,7 +246,9 @@ class Invoices extends Security_Controller {
             "company_id" => $this->request->getPost('company_id') ? $this->request->getPost('company_id') : get_default_company_id(),
             "note" => $this->request->getPost('invoice_note'),
             "labels" => $this->request->getPost('labels'),
-            "estimate_id" => $estimate_id ? $estimate_id : 0
+            "estimate_id" => $estimate_id ? $estimate_id : 0,
+            "documento" => $this->request->getPost('invoice_documento'),
+            "numero_doc" => $tot_doc + 1
         );
 
         $invoice_data = array_merge($_invoice_data, $this->_get_recurring_data($id));
@@ -1864,8 +1869,9 @@ class Invoices extends Security_Controller {
         $fecha_envio = $this->request->getPost('fecha_envio');
         $motivo = $this->request->getPost('motivo');
         $invoice_id = $this->request->getPost('id');
+        $invoiceValid = $this->Invoices_model->get_invoice_by_id($invoice_id);
 
-        // if ($tipo_doc == 1) {
+        if ($invoiceValid->documento == '01') {
             $data = [
                 "fecha_de_emision_de_documentos" => $fecha_envio,
                 "documentos" => [
@@ -1876,9 +1882,19 @@ class Invoices extends Security_Controller {
                 ]
             ];
             $ruta = "/voided";
-        // }
-
-        $settings_ = $this->Settings_model->get_settings_facturadorpro();
+        }else if($invoiceValid->documento == '03'){
+            $data = [
+                "fecha_de_emision_de_documentos" => $fecha_envio,
+                "codigo_tipo_proceso" => "3",
+                "documentos" => [
+                    [
+                        "external_id" => $external_id,
+                        "motivo_anulacion" => $motivo
+                    ]
+                ]
+            ];
+            $ruta = "/summaries";
+        }
 
         $data_json = json_encode($data);
         // var_dump($data);
@@ -1888,7 +1904,7 @@ class Invoices extends Security_Controller {
         curl_setopt_array(
             $curl,
             array(
-                CURLOPT_URL => $settings_[3]->setting_value . '/api' . $ruta,
+                CURLOPT_URL => get_setting('url_facturadorpro') . '/api' . $ruta,
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_ENCODING => '',
                 CURLOPT_MAXREDIRS => 10,
@@ -1899,7 +1915,7 @@ class Invoices extends Security_Controller {
                 CURLOPT_POSTFIELDS => $data_json,
                 CURLOPT_HTTPHEADER => array(
                     'Content-Type: application/json',
-                    'Authorization: Bearer ' . $settings_[2]->setting_value
+                    'Authorization: Bearer ' . get_setting('token_facturadorpro')
                 ),
             )
         );
@@ -1945,16 +1961,17 @@ class Invoices extends Security_Controller {
         if (!$this->can_edit_invoices()) {
             app_redirect("forbidden");
         }
+        $invoiceValid = $this->Invoices_model->get_invoice_by_id($invoice_id);
 
-        // if ($tipo_doc == 1) {
-            $data = [
-                "external_id" => $external_id,
-                "ticket" => $ticket_anulacion
-            ];
+        $data = [
+            "external_id" => $external_id,
+            "ticket" => $ticket_anulacion
+        ];
+        if ($invoiceValid->documento == '01') {
             $ruta = '/voided/status';
-        // }
-
-        $settings_ = $this->Settings_model->get_settings_facturadorpro();
+        }else if($invoiceValid->documento == '03'){
+            $ruta = '/summaries/status';
+        }
 
         $data_json = json_encode($data);
         // var_dump($data);
@@ -1964,7 +1981,7 @@ class Invoices extends Security_Controller {
         curl_setopt_array(
             $curl,
             array(
-                CURLOPT_URL => $settings_[3]->setting_value . '/api' . $ruta,
+                CURLOPT_URL => get_setting('url_facturadorpro') . '/api' . $ruta,
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_ENCODING => '',
                 CURLOPT_MAXREDIRS => 10,
@@ -1975,7 +1992,7 @@ class Invoices extends Security_Controller {
                 CURLOPT_POSTFIELDS => $data_json,
                 CURLOPT_HTTPHEADER => array(
                     'Content-Type: application/json',
-                    'Authorization: Bearer ' . $settings_[2]->setting_value
+                    'Authorization: Bearer ' . get_setting('token_facturadorpro')
                 ),
             )
         );

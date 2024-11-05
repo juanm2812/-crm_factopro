@@ -163,7 +163,7 @@ class Invoice_payments extends Security_Controller {
                     $products[] = 
                         [
                             "codigo_interno" => 'PRO001',
-                            "descripcion" => $detail->description,
+                            "descripcion" => $detail->title,
                             "codigo_producto_sunat" => "",
                             "unidad_de_medida" => ($detail->unit_type == 'UND') ? 'NIU' : $detail->unit_type, #dejarlo en NIU la Unidad de Medida
                             "cantidad" => $detail->quantity,
@@ -188,12 +188,10 @@ class Invoice_payments extends Security_Controller {
                     $total_operaciones_exoneradas = 0;
                 }
                 
-                $settings_ = $this->Settings_model->get_settings_facturadorpro();
-
                 preg_match('/#(\d+)/', $invoiceValid->display_id, $matches);
 
                 // El número se almacenará en `$matches[1]`
-                $invoiceNumber = $matches[1] ?? null;
+                // $invoiceNumber = $matches[1] ?? null;
                 $pagos = [];
                 $cuotas = [];
 
@@ -262,13 +260,13 @@ class Invoice_payments extends Security_Controller {
 
                 /**CONECCCION FACTURADOR PRO */
                 $data = [
-                    "serie_documento" => $settings_[0]->setting_value, //Para boletas la serie debe comenzar por la letra B, seguido de tres dígitos
-                    "numero_documento" => $invoiceNumber,
+                    "serie_documento" => ($invoiceValid->documento == '01') ? get_setting('serie_facturadorpro') : get_setting('serie2_facturadorpro'), //Para boletas la serie debe comenzar por la letra B, seguido de tres dígitos
+                    "numero_documento" => $invoiceValid->numero_doc,
                     // "numero_documento" => '58',
                     "fecha_de_emision" => $invoiceValid->bill_date,
                     "hora_de_emision" => date('H:i:s'),
                     "codigo_tipo_operacion" => "0101",
-                    "codigo_tipo_documento" => '01', #codigo de tipodocumento de sunat
+                    "codigo_tipo_documento" => $invoiceValid->documento, #codigo de tipodocumento de sunat
                     "codigo_tipo_moneda" => "PEN", #sigla de la moneda
                     "fecha_de_vencimiento" => $invoiceValid->bill_date,
                     "numero_orden_de_compra" => '',
@@ -311,7 +309,7 @@ class Invoice_payments extends Security_Controller {
                 curl_setopt_array(
                     $curl,
                     array(
-                        CURLOPT_URL => $settings_[3]->setting_value . '/api/documents',
+                        CURLOPT_URL => get_setting('url_facturadorpro') . '/api/documents',
                         CURLOPT_RETURNTRANSFER => true,
                         CURLOPT_ENCODING => '',
                         CURLOPT_MAXREDIRS => 10,
@@ -322,7 +320,7 @@ class Invoice_payments extends Security_Controller {
                         CURLOPT_POSTFIELDS => $data_json,
                         CURLOPT_HTTPHEADER => array(
                             'Content-Type: application/json',
-                            'Authorization: Bearer ' . $settings_[2]->setting_value
+                            'Authorization: Bearer ' . get_setting('token_facturadorpro')
                         ),
                     )
                 );

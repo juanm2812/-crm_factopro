@@ -93,6 +93,23 @@
                     </div>
                 </div>
             <?php } ?>
+
+                <div class="form-group">
+                    <div class="row">
+                        <label for="invoice_documento" class="col-md-3 d-flex align-items-center">
+                            Documento
+                        </label>
+                        
+                        <div class="col-md-9">
+                            <div class="input-group">
+                                <?php
+                                echo form_dropdown("invoice_documento", ['' => 'Seleccione', '01' => 'Factura', '03' => 'Boleta'], [], 
+                                    "class='select2 validate-hidden form-control' id='invoice_documento' data-rule-required='true' data-msg-required='" . app_lang('field_required') . "'");
+                                ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             <?php if ($project_id) { ?>
                 <input type="hidden" name="invoice_project_id" value="<?php echo $project_id; ?>" />
             <?php } else { ?>
