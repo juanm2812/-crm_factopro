@@ -382,6 +382,40 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="form-group">
+                                <div class="row">
+                                    <label for="serie_nota_facturadorpro" class=" col-md-2">Serie Nota Credito Factura</label>
+                                    <div class=" col-md-10">
+                                        <?php
+                                        echo form_input(array(
+                                            "id" => "serie_nota_facturadorpro",
+                                            "name" => "serie_nota_facturadorpro",
+                                            "value" => get_setting('serie_nota_facturadorpro'),
+                                            "class" => "form-control",
+                                            "data-rule-required" => true,
+                                            "data-msg-required" => app_lang("field_required"),
+                                        ));
+                                        ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="row">
+                                    <label for="serie_nota2_facturadorpro" class=" col-md-2">Serie Nota Credito Boleta</label>
+                                    <div class=" col-md-10">
+                                        <?php
+                                        echo form_input(array(
+                                            "id" => "serie_nota2_facturadorpro",
+                                            "name" => "serie_nota2_facturadorpro",
+                                            "value" => get_setting('serie_nota2_facturadorpro'),
+                                            "class" => "form-control",
+                                            "data-rule-required" => true,
+                                            "data-msg-required" => app_lang("field_required"),
+                                        ));
+                                        ?>
+                                    </div>
+                                </div>
+                            </div>
                             <?php app_hooks()->do_action('app_hook_general_settings_extension'); ?>
 
                         </div>
