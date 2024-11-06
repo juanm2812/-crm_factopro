@@ -162,8 +162,8 @@ class Invoice_payments extends Security_Controller {
                 foreach($invoiceDetail as $detail){
                     $products[] = 
                         [
-                            "codigo_interno" => 'PRO001',
-                            "descripcion" => $detail->title,
+                            "codigo_interno" => $detail->title,
+                            "descripcion" => $detail->description,
                             "codigo_producto_sunat" => "",
                             "unidad_de_medida" => ($detail->unit_type == 'UND') ? 'NIU' : $detail->unit_type, #dejarlo en NIU la Unidad de Medida
                             "cantidad" => $detail->quantity,
@@ -188,7 +188,7 @@ class Invoice_payments extends Security_Controller {
                     $total_operaciones_exoneradas = 0;
                 }
                 
-                preg_match('/#(\d+)/', $invoiceValid->display_id, $matches);
+                // preg_match('/#(\d+)/', $invoiceValid->display_id, $matches);
 
                 // El número se almacenará en `$matches[1]`
                 // $invoiceNumber = $matches[1] ?? null;

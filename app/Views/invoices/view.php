@@ -52,12 +52,12 @@
                                                 Descargar XML
                                             </a>
                                         </li>
-                                        <!-- <li role="presentation">
-                                            <a href="<?php echo $invoice_info->external_id; ?>" title="Descargar PDF" class="dropdown-item">
+                                        <li role="presentation">
+                                            <a href="<?php echo $invoice_info->url_pdf; ?>" title="Descargar PDF" class="dropdown-item">
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-download icon-16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg> 
-                                                Imprimir
+                                                Descargar Doc.
                                             </a>
-                                        </li> -->
+                                        </li>
                                         <?php if(empty($invoice_info->ticket_anulacion)){ ?>
                                             <li role="presentation"><?php echo modal_anchor(get_uri("invoices/invoice_anulacion_form/" . $invoice_info->id), "<i data-feather='check-circle' class='icon-16'></i> " . 'Anular Doc.', array("title" => 'Anular Doc.', "class" => "dropdown-item", "tabindex" => "-1", "data-post-id" => $invoice_info->id, "role" => "menuitem",)); ?></li>
                                         <?php }else if($invoice_info->anulado == 0){ ?>

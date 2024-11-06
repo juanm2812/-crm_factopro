@@ -664,8 +664,14 @@ class Invoices extends Security_Controller {
             } else if ($data->credit_note_id) {
                 $credit_note_url = anchor(get_uri("invoices/view/" . $data->credit_note_id), "<i data-feather='file-minus' class='icon-18'></i>", array("title" => app_lang("credit_note"), "class" => "ml10"));
             }
-
-            $invoice_url = anchor(get_uri("invoices/view/" . $data->id), $data->display_id, array("class" => $link_class)) . $main_invoice_url . $credit_note_url;
+            $id__ =  $data->display_id;
+            if($data->documento == '01'){
+                $id__ = 'Fact. ' . $data->numero_doc;
+            }
+            if($data->documento == '03'){
+                $id__ = 'Bolet. ' . $data->numero_doc;
+            }
+            $invoice_url = anchor(get_uri("invoices/view/" . $data->id), $id__, array("class" => $link_class)) . $main_invoice_url . $credit_note_url;
         } else {
             $link_class = "";
             if ($data->main_invoice_id) {
@@ -674,8 +680,14 @@ class Invoices extends Security_Controller {
             } else if ($data->credit_note_id) {
                 $credit_note_url = anchor(get_uri("invoices/preview/" . $data->credit_note_id), "<i data-feather='file-minus' class='icon-18'></i>", array("title" => app_lang("credit_note"), "class" => "ml10"));
             }
-
-            $invoice_url = anchor(get_uri("invoices/preview/" . $data->id), $data->display_id, array("class" => $link_class)) . $main_invoice_url . $credit_note_url;
+            $id__ =  $data->display_id;
+            if($data->documento == '01'){
+                $id__ = 'Fact. ' . $data->numero_doc;
+            }
+            if($data->documento == '03'){
+                $id__ = 'Bolet. ' . $data->numero_doc;
+            }
+            $invoice_url = anchor(get_uri("invoices/preview/" . $data->id), $id__, array("class" => $link_class)) . $main_invoice_url . $credit_note_url;
         }
 
         $status = "-";
@@ -1452,6 +1464,197 @@ class Invoices extends Security_Controller {
 
         validate_numeric_value($invoice_id);
         if ($invoice_id && $status) {
+
+            $invoiceValid = $this->Invoices_model->get_invoice_by_id($invoice_id);
+            // var_dump($invoiceValid);
+            if($invoiceValid->url_cdr == '' || $invoiceValid->codigo_envio > 0){
+
+                $invoiceDetail = $this->Invoice_items_model->get_details(['invoice_id' => $invoice_id])->getResult();
+
+                $descuentosAjax = [];
+
+                // $total_venta = $total_venta - ;
+                if ($invoiceValid->discount_total > 0) {
+                    $factor = (($invoiceValid->discount_total * 100) / $invoiceValid->invoice_subtotal) / 100;
+                    $descuentosAjax = [
+                        "descuentos" => [
+                            [
+                                "codigo" => "03",
+                                "descripcion" => "Descuentos globales que no afectan la base imponible del IGV/IVAP",
+                                "factor" => number_format($factor, 5, '.', ''),
+                                "monto" => number_format($invoiceValid->discount_total, 2, '.', ''),
+                                "base" => number_format($invoiceValid->invoice_subtotal, 2, '.', '')
+                            ]
+                        ],
+                    ];
+                }
+                $igv = 0;
+                if($invoiceValid->tax > 0){
+                    if($invoiceValid->igv > 0){
+                        $igv = $invoiceValid->igv / 100;
+                    }else{
+                        $igv = 0; 
+                    }
+                }
+
+                $products = [];
+                foreach($invoiceDetail as $detail){
+                    $products[] = 
+                        [
+                            "codigo_interno" => $detail->title,
+                            "descripcion" => $detail->description,
+                            "codigo_producto_sunat" => "",
+                            "unidad_de_medida" => ($detail->unit_type == 'UND') ? 'NIU' : $detail->unit_type, #dejarlo en NIU la Unidad de Medida
+                            "cantidad" => $detail->quantity,
+                            "valor_unitario" => number_format($detail->rate, 6, '.', ''), // precio /igv
+                            "codigo_tipo_precio" => "01", #Dejarlo como esta
+                            "precio_unitario" => number_format($detail->rate + + ($detail->rate * $igv), 6, '.', ''), #TOTAL DEL PRODUCTO
+                            "codigo_tipo_afectacion_igv" => ($igv > 0) ? '10' : '20', #Dejarlo como esta
+                            "total_base_igv" => number_format($detail->total, 2, '.', ''),
+                            "porcentaje_igv" => number_format($invoiceValid->igv, 2, '.', ''),  #Dejarlo como esta
+                            "total_igv" => number_format(($detail->total * $igv), 2, '.', ''),
+                            "total_impuestos" => number_format(($detail->total * $igv), 2, '.', ''),
+                            "total_valor_item" => number_format($detail->total, 2, '.', ''),
+                            "total_item" => number_format(($detail->total + ($detail->total * $igv)), 2, '.', '') #TOTAL DEL PRODUCTO
+                        ];
+                }
+
+                $total_operaciones_gravadas = 0;
+                $total_operaciones_exoneradas = $invoiceValid->invoice_total + $invoiceValid->discount_total;
+
+                if($invoiceValid->tax > 0){
+                    $total_operaciones_gravadas = $invoiceValid->invoice_total - $invoiceValid->tax + $invoiceValid->discount_total;
+                    $total_operaciones_exoneradas = 0;
+                }
+                
+                // preg_match('/#(\d+)/', $invoiceValid->display_id, $matches);
+
+                // El número se almacenará en `$matches[1]`
+                // $invoiceNumber = $matches[1] ?? null;
+
+
+                        $codigo_metodo_pago = '02';
+                        $monto_cutoa = $invoiceValid->invoice_total;
+                        
+                        $cuotas = [
+                            "cuotas" => [
+                                [
+                                    "fecha" => $invoiceValid->due_date,
+                                    "codigo_tipo_moneda" => "PEN",
+                                    "monto" => $monto_cutoa
+                                ]
+                            ],
+                        ];
+
+                /**CONECCCION FACTURADOR PRO */
+                $data = [
+                    "serie_documento" => ($invoiceValid->documento == '01') ? get_setting('serie_facturadorpro') : get_setting('serie2_facturadorpro'), //Para boletas la serie debe comenzar por la letra B, seguido de tres dígitos
+                    "numero_documento" => $invoiceValid->numero_doc,
+                    // "numero_documento" => '58',
+                    "fecha_de_emision" => $invoiceValid->bill_date,
+                    "hora_de_emision" => date('H:i:s'),
+                    "codigo_tipo_operacion" => "0101",
+                    "codigo_tipo_documento" => $invoiceValid->documento, #codigo de tipodocumento de sunat
+                    "codigo_tipo_moneda" => "PEN", #sigla de la moneda
+                    "fecha_de_vencimiento" => $invoiceValid->bill_date,
+                    "numero_orden_de_compra" => '',
+                    "codigo_condicion_de_pago" => $codigo_metodo_pago,
+                    "datos_del_cliente_o_receptor" => [
+                        "codigo_tipo_documento_identidad" => strlen($invoiceValid->company_code) == 8 ? 1 : 6,
+                        "numero_documento" => $invoiceValid->company_code,
+                        "apellidos_y_nombres_o_razon_social" => $invoiceValid->company_name,
+                        "codigo_pais" => "PE",
+                        "ubigeo" => "",
+                        "direccion" => $invoiceValid->address,
+                        "correo_electronico" => '',
+                        "telefono" => $invoiceValid->phone
+                    ],
+                    "totales" => [
+                        "total_descuentos" => number_format($invoiceValid->discount_total, 2, '.', ''),
+                        "total_exportacion" => 0.00,
+                        "total_operaciones_gravadas" => number_format($total_operaciones_gravadas, 2, '.', ''),
+                        "total_operaciones_inafectas" => 0.00,
+                        "total_operaciones_exoneradas" => number_format($total_operaciones_exoneradas, 2, '.', ''),
+                        "total_operaciones_gratuitas" => 0.00,
+                        "total_igv" => $invoiceValid->tax,
+                        "total_impuestos" => number_format($invoiceValid->tax, 2, '.', ''),
+                        "total_valor" => number_format(($invoiceValid->invoice_total + $invoiceValid->discount_total) - $invoiceValid->tax, 2, '.', ''),
+                        "subtotal_venta" => number_format(($invoiceValid->invoice_subtotal + $invoiceValid->tax), 2, '.', ''),
+                        "total_venta" => number_format(($invoiceValid->invoice_total), 2, '.', '')
+                    ],
+                    "items" => $products,        
+                ];
+
+                $data = array_merge($data, $cuotas);
+                // $data = array_merge($data, $cuotas);
+                $data = array_merge($data, $descuentosAjax);
+
+                $data_json = json_encode($data);
+
+                $curl = curl_init();
+                curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+
+                curl_setopt_array(
+                    $curl,
+                    array(
+                        CURLOPT_URL => get_setting('url_facturadorpro') . '/api/documents',
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_ENCODING => '',
+                        CURLOPT_MAXREDIRS => 10,
+                        CURLOPT_TIMEOUT => 0,
+                        CURLOPT_FOLLOWLOCATION => true,
+                        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                        CURLOPT_CUSTOMREQUEST => 'POST',
+                        CURLOPT_POSTFIELDS => $data_json,
+                        CURLOPT_HTTPHEADER => array(
+                            'Content-Type: application/json',
+                            'Authorization: Bearer ' . get_setting('token_facturadorpro')
+                        ),
+                    )
+                );
+
+                $response = curl_exec($curl);
+                curl_close($curl);
+                
+                $rs = json_decode($response);
+                // var_dump($rs);
+
+                if($rs->success){
+                    $enviado_sunat = 0;
+                    $code_respuesta_sunat = '';
+                    $descripcion_sunat_cdr = 'Problemas de conexion con el FACTURADOR PRO';
+    
+                    $enviado_sunat = ($rs->response != [] && $rs->response->code < 1) ? '1' : '0';
+                    // $name_file_sunat = @$rs->data->filename;
+                    // $hash_cdr = !empty(@$rs->links->cdr) ? @$rs->data->hash : '';
+                    $xml = ($enviado_sunat == '1') ? @$rs->links->xml : null;
+                    $pdf = ($enviado_sunat == '1') ? @$rs->links->pdf : null;
+                    $cdr = ($enviado_sunat == '1') ? @$rs->links->cdr : null;
+                    $external_id = ($enviado_sunat == '1') ? @$rs->data->external_id : '';
+                    // $cdr = @$rs->links['cdr'];
+                     
+                    if(@$rs->response != []){ 
+                        $code_respuesta_sunat = @$rs->response->code;
+                        $descripcion_sunat_cdr = @$rs->response->description;
+                    }
+    
+                    $data = [
+                        'respuesta_envio' => $descripcion_sunat_cdr,
+                        'codigo_envio' => $code_respuesta_sunat,
+                        'external_id' => $external_id,
+                        'url_cdr' => $cdr,
+                        'url_xml' => $xml,
+                        'url_pdf' => $pdf,
+                    ];
+    
+                    $this->Invoices_model->update_invoice_respuesta_pro($data, $invoice_id);
+                }else{
+                    echo json_encode(array("success" => false, 'message' => $rs->message));
+                }
+
+            }
+
+
             //change the draft status of the invoice
             $this->Invoices_model->update_invoice_status($invoice_id, $status);
 
