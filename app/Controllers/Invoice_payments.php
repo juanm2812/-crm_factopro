@@ -162,7 +162,7 @@ class Invoice_payments extends Security_Controller {
                 foreach($invoiceDetail as $detail){
                     $products[] = 
                         [
-                            "codigo_interno" => $detail->description,
+                            "codigo_interno" => str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT),
                             "descripcion" => $detail->title,
                             "codigo_producto_sunat" => "",
                             "unidad_de_medida" => ($detail->unit_type == 'UND') ? 'NIU' : $detail->unit_type, #dejarlo en NIU la Unidad de Medida
