@@ -196,24 +196,49 @@ class Invoice_payments extends Security_Controller {
                 $cuotas = [];
 
                 $codigo_metodo_pago = '';
-                switch($item_info->payment_method_title){
-                    case 'Contado':
-                    case 'Cash':
-                        $codigo_metodo_pago = '01';
-                        $monto_pago = number_format($invoiceValid->invoice_total, 2, '.', '');
+                // switch($item_info->payment_method_title){
+                //     case 'Contado':
+                //     case 'Cash':
+                //         $codigo_metodo_pago = '01';
+                //         $monto_pago = number_format($invoiceValid->invoice_total, 2, '.', '');
 
-                        break;
-                    // case 'Crédito':
-                    // case 'Credito':
-                    // case 'credito':
-                    // case 'crédito':
-                    // case 'Tarjeta de crédito':
-                    // case 'Tarjeta de credito':
-                    // case 'tarjeta de credito':
-                    // case 'tarjeta de crédito':
-                    // case 'tarjeta crédito':
-                    // case 'tarjeta credito':
-                    default:
+                //         break;
+                //     // case 'Crédito':
+                //     // case 'Credito':
+                //     // case 'credito':
+                //     // case 'crédito':
+                //     // case 'Tarjeta de crédito':
+                //     // case 'Tarjeta de credito':
+                //     // case 'tarjeta de credito':
+                //     // case 'tarjeta de crédito':
+                //     // case 'tarjeta crédito':
+                //     // case 'tarjeta credito':
+                //     default:
+                //         $codigo_metodo_pago = '02';
+                //         $monto_pago = unformat_currency($this->request->getPost('invoice_payment_amount'));
+                //         if($invoiceValid->invoice_total == $this->request->getPost('invoice_payment_amount')){
+                //             $monto_cutoa = $invoiceValid->invoice_total;
+                //         }else{
+                //             $monto_cutoa = number_format(($invoiceValid->invoice_total) - unformat_currency($this->request->getPost('invoice_payment_amount')), 2, '.', '');
+                //         }
+                        
+                //         $cuotas = [
+                //             "cuotas" => [
+                //                 [
+                //                     "fecha" => $item_info->payment_date,
+                //                     "codigo_tipo_moneda" => "PEN",
+                //                     "monto" => $monto_cutoa
+                //                 ]
+                //             ],
+                //         ];
+                //         break;
+                // }
+
+                switch($item_info->payment_method_title){
+                    case 'Crédito':
+                    case 'Credito':
+                    case 'credito':
+                    case 'crédito':
                         $codigo_metodo_pago = '02';
                         $monto_pago = unformat_currency($this->request->getPost('invoice_payment_amount'));
                         if($invoiceValid->invoice_total == $this->request->getPost('invoice_payment_amount')){
@@ -231,6 +256,12 @@ class Invoice_payments extends Security_Controller {
                                 ]
                             ],
                         ];
+                        break;
+                        
+                    default:
+                        $codigo_metodo_pago = '01';
+                        $monto_pago = number_format($invoiceValid->invoice_total, 2, '.', '');
+
                         break;
                 }
 
