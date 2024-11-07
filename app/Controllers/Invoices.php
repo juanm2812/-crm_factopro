@@ -1988,24 +1988,24 @@ class Invoices extends Security_Controller {
                 $descuentosAjax = [];
 
                 // $total_venta = $total_venta - ;
-                if ($invoiceValid_nota->discount_total > 0) {
-                    $factor = (($invoiceValid_nota->discount_total * 100) / $invoiceValid_nota->invoice_subtotal) / 100;
+                if ($invoiceValid->discount_total > 0) {
+                    $factor = (($invoiceValid->discount_total * 100) / $invoiceValid->invoice_subtotal) / 100;
                     $descuentosAjax = [
                         "descuentos" => [
                             [
                                 "codigo" => "03",
                                 "descripcion" => "Descuentos globales que no afectan la base imponible del IGV/IVAP",
                                 "factor" => number_format($factor, 5, '.', ''),
-                                "monto" => number_format($invoiceValid_nota->discount_total, 2, '.', ''),
-                                "base" => number_format($invoiceValid_nota->invoice_subtotal, 2, '.', '')
+                                "monto" => number_format($invoiceValid->discount_total, 2, '.', ''),
+                                "base" => number_format($invoiceValid->invoice_subtotal, 2, '.', '')
                             ]
                         ],
                     ];
                 }
                 $igv = 0;
-                if($invoiceValid_nota->tax > 0){
-                    if($invoiceValid_nota->igv > 0){
-                        $igv = $invoiceValid_nota->igv / 100;
+                if($invoiceValid->tax > 0){
+                    if($invoiceValid->igv > 0){
+                        $igv = $invoiceValid->igv / 100;
                     }else{
                         $igv = 0; 
                     }
@@ -2077,7 +2077,7 @@ class Invoices extends Security_Controller {
                         "total_igv" => $invoiceValid->tax,
                         "total_impuestos" => number_format($invoiceValid->tax, 2, '.', ''),
                         "total_valor" => number_format(($invoiceValid->invoice_total + $invoiceValid->discount_total) - $invoiceValid->tax, 2, '.', ''),
-                        "subtotal_venta" => number_format(($invoiceValid->invoice_subtotal + $invoiceValid->tax), 2, '.', ''),
+                        "subtotal_venta" => number_format(($invoiceValid->invoice_subtotal), 2, '.', ''),
                         "total_venta" => number_format(($invoiceValid->invoice_total), 2, '.', '')
                     ],
                     "items" => $products,
